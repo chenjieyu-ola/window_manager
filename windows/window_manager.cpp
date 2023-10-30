@@ -26,6 +26,7 @@
 
 namespace {
 
+using namespace std;
 const flutter::EncodableValue* ValueOrNull(const flutter::EncodableMap& map,
                                            const char* key) {
   auto it = map.find(flutter::EncodableValue(key));
@@ -33,7 +34,76 @@ const flutter::EncodableValue* ValueOrNull(const flutter::EncodableMap& map,
     return nullptr;
   }
   return &(it->second);
+  
 }
+
+
+
+  char Char2Int(char ch)
+  {
+    if (ch >= '0' && ch <= '9')
+      return (char)(ch - '0');
+    if (ch >= 'a' && ch <= 'f')
+      return (char)(ch - 'a' + 10);
+    if (ch >= 'A' && ch <= 'F')
+      return (char)(ch - 'A' + 10);
+    return -1;
+  }
+
+  char Str2Bin(char *str)
+  {
+    char tempWord[2];
+    char chn;
+
+    tempWord[0] = Char2Int(str[0]); // make the B to 11 -- 00001011
+    tempWord[1] = Char2Int(str[1]); // make the 0 to 0  -- 00000000
+
+    chn = (tempWord[0] << 4) | tempWord[1]; // to change the BO to 10110000
+
+    return chn;
+  }
+
+  std::string UrlDecode(std::string str)
+  {
+    std::string output = "";
+    char tmp[2];
+    int i = 0;
+
+    while (i < str.length())
+    {
+      if (str[i] == '%')
+      {
+        tmp[0] = str[i + 1];
+        tmp[1] = str[i + 2];
+        output += Str2Bin(tmp);
+        i = i + 3;
+      }
+      else if (str[i] == '+')
+      {
+        output += ' ';
+        i++;
+      }
+      else
+      {
+        output += str[i];
+        i++;
+      }
+    }
+
+    return output;
+  }
+
+  std::wstring StoWs(const std::string &s)
+  {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+  }
 
 class WindowManager {
  public:
@@ -105,6 +175,7 @@ class WindowManager {
   void WindowManager::SetSkipTaskbar(const flutter::EncodableMap& args);
   void WindowManager::SetProgressBar(const flutter::EncodableMap& args);
   void WindowManager::SetIcon(const flutter::EncodableMap& args);
+  void WindowManager::SetOverIcon(const flutter::EncodableMap& args);
   bool WindowManager::HasShadow();
   void WindowManager::SetHasShadow(const flutter::EncodableMap& args);
   double WindowManager::GetOpacity();
@@ -699,6 +770,26 @@ void WindowManager::SetIcon(const flutter::EncodableMap& args) {
 
   SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
   SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIconLarge);
+}
+
+void WindowManager::SetOverIcon(const flutter::EncodableMap& args) {
+  std::string iconPath =
+      std::get<std::string>(args.at(flutter::EncodableValue("iconPath")));
+
+  std::vector<unsigned char>  bytes = std::get<vector<unsigned char>>(args.at(flutter::EncodableValue("name")));
+
+
+  std::string name = UrlDecode(std::string(bytes.begin(), bytes.end()));
+
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+
+  HICON hIconSmall =
+      (HICON)(LoadImage(NULL, (LPCWSTR)(converter.from_bytes(iconPath).c_str()),
+                        IMAGE_ICON, 16, 16, LR_LOADFROMFILE));
+
+  HWND hWnd = FindWindow(NULL, StoWs(name).c_str());
+
+  taskbar_->SetOverlayIcon(hWnd, hIconSmall, NULL);
 }
 
 bool WindowManager::HasShadow() {

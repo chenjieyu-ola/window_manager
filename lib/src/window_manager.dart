@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:fast_gbk/fast_gbk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -522,6 +523,20 @@ class WindowManager {
     };
 
     await _channel.invokeMethod('setIcon', arguments);
+  }
+
+  Future<void> setOverIcon(String iconPath, String name,
+      {bool fullPath = false}) async {
+    if (!fullPath) {
+      iconPath = path.joinAll([
+        path.dirname(Platform.resolvedExecutable),
+        'data/flutter_assets',
+        iconPath,
+      ]);
+    }
+    final Map<String, dynamic> arguments = {'iconPath': iconPath, 'name': gbk.encode(name)};
+
+    await _channel.invokeMethod('setOverIcon', arguments);
   }
 
   /// Returns `bool` - Whether the window has a shadow. On Windows, always returns true unless window is frameless.
