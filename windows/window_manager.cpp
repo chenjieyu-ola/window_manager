@@ -790,6 +790,7 @@ void WindowManager::SetOverIcon(const flutter::EncodableMap& args) {
   HWND hWnd = FindWindow(NULL, StoWs(name).c_str());
 
   taskbar_->SetOverlayIcon(hWnd, hIconSmall, NULL);
+  DestroyIcon(hIconSmall);
 }
 
 bool WindowManager::HasShadow() {
